@@ -23,6 +23,8 @@ def plot_logarithm(T: int, y: np.array):
     For a given time series y that might have missing values,
     plots its logarithm
     """
+    plt.figure(figsize=(25,10))
+
     log_data: np.array = np.log(y)
     start_idx: int = 0
     for i in range(T):
@@ -43,22 +45,23 @@ def generate_multiple_series(T: int, n: int, min_val: float, max_val: float, out
     """
     Generates multiple time series, makes a list of all of them and writes them in a csv file
     """
-    output = open(out, "w")
+    # output = open(out, "w")
     series: list = []
-    for i in range(n):
-        p: float = np.random.uniform(0, 0.1)
-        y = generate_unbalanced_data(T, min_val, max_val, p)
-        series.append(y)
-        output.write(y)
+    # for i in range(n):
+    #     p: float = np.random.uniform(0, 0.1)
+    #     y = generate_unbalanced_data(T, min_val, max_val, p)
+    #     series.append(y)
+    #     output.writerow(','.join(map(str, y)))
+    
+    with open(out, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        for i in range(n):
+            p: float = np.random.uniform(0, 0.1)
+            y = generate_unbalanced_data(T, min_val, max_val, p)
+            series.append(y)
+            writer.writerow(y)
 
     return series
-
-def row_to_array(row: str) -> np.array:
-    """
-    Helper method to read multiple time series. Converts a csv row to a time series
-    """
-    values = [float(x) if x.strip() else np.nan for x in row.split(',')]
-    return np.array(values)
 
 def read_data(input: str) -> list:
     """
@@ -68,7 +71,7 @@ def read_data(input: str) -> list:
     with open(input, 'r') as file:
         reader = csv.reader(file)
         for row in reader:
-            time_series_list.append(row_to_array(row))
+            time_series_list.append(row)
 
     return time_series_list
 
@@ -76,6 +79,8 @@ def plot_multiple_series(series_list: list):
     """
     Given a list of time series, plots the logarithms of the series in the same plot
     """
+    plt.figure(figsize=(25,10))
+
     n: int = len(series_list)
     T: int = len(series_list[0])
     colors = plt.cm.jet(np.linspace(0, 1, n))
@@ -85,7 +90,7 @@ def plot_multiple_series(series_list: list):
         for j in range(T):
             if np.isnan(log_series[j]):
                 if start_idx < j:
-                    plt.plot(range(start_idx, j), np.log(log_series[start_idx:j]), color=colors[i], linestyle='-')
+                    plt.plot(range(start_idx, j), log_series[start_idx:j], color=colors[i], linestyle='-')
                 start_idx = j + 1
         if start_idx < T:
-            plt.plot(range(start_idx, T), np.log(log_series[start_idx:]), color=colors[i], linestyle='-')
+            plt.plot(range(start_idx, T), log_series[start_idx:], color=colors[i], linestyle='-')
