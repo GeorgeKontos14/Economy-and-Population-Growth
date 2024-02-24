@@ -13,33 +13,13 @@ def generate_unbalanced_data(T: int, min_val: float, max_val: float, missing_pro
     """
     Generates a time series with missing values
     """
-    random_data: np.array = np.random.rand(T)
+    random_data: np.array = np.random.normal(0, 1, T)
+    scaled_data = (random_data - np.min(random_data)) / (np.max(random_data) - np.min(random_data))
+    scaled_data = scaled_data * (max_val - min_val) + min_val
     missing_mask: np.array = np.random.rand(T) < missing_prob
-    random_data[missing_mask] = np.nan
-    return random_data * (max_val - min_val) + min_val
+    scaled_data[missing_mask] = np.nan
+    return scaled_data
 
-def plot_logarithm(T: int, y: np.array):
-    """
-    For a given time series y that might have missing values,
-    plots its logarithm
-    """
-    plt.figure(figsize=(25,10))
-
-    log_data: np.array = np.log(y)
-    start_idx: int = 0
-    for i in range(T):
-        if np.isnan(log_data[i]):
-            if start_idx < i:
-                plt.plot(range(start_idx, i), log_data[start_idx:i], color='blue', linestyle='-')
-            start_idx = i + 1
-
-    # Plot the last segment if it exists
-    if start_idx < T:
-        plt.plot(range(start_idx, T), log_data[start_idx:], color='blue', linestyle='-')
-
-    plt.xlabel('Time')
-    plt.ylabel('Logarithm of the time series')
-    plt.show()
 
 def generate_multiple_series(T: int, n: int, min_val: float, max_val: float, out: str) -> list:
     """
@@ -74,23 +54,3 @@ def read_data(input: str) -> list:
             time_series_list.append(row)
 
     return time_series_list
-
-def plot_multiple_series(series_list: list):
-    """
-    Given a list of time series, plots the logarithms of the series in the same plot
-    """
-    plt.figure(figsize=(25,10))
-
-    n: int = len(series_list)
-    T: int = len(series_list[0])
-    colors = plt.cm.jet(np.linspace(0, 1, n))
-    for i, series in enumerate(series_list):
-        start_idx: int = 0
-        log_series: np.array = np.log(series)
-        for j in range(T):
-            if np.isnan(log_series[j]):
-                if start_idx < j:
-                    plt.plot(range(start_idx, j), log_series[start_idx:j], color=colors[i], linestyle='-')
-                start_idx = j + 1
-        if start_idx < T:
-            plt.plot(range(start_idx, T), log_series[start_idx:], color=colors[i], linestyle='-')

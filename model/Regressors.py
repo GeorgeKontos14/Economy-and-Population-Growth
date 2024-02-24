@@ -16,16 +16,11 @@ def find_regressors(T: int, cutoff: float) -> np.ndarray:
     inverse: np.ndarray = np.linalg.inv(np.matmul(R.T, R))
     M: np.ndarray = np.identity(T)-np.linalg.multi_dot([R, inverse, R.T])
     MVM: np.ndarray = np.linalg.multi_dot([M, V, M])
-    regressors: list = []
-    regressors.append(R[:, 0])
-    regressors.append(R[:, 1])
-    eigenvalues, eigenvectors = np.linalg.eig(MVM)
-    indices: np.ndarray = np.argsort(eigenvalues)
-    i: int = len(indices)-1
-    while i >= 0 and len(regressors) < q+1:
-        regressors.append(eigenvectors[indices[i]])
-        i -= 1
-    assert len(regressors) == q+1
+
+    regressors = [R[:, 0], R[:, 1]]
+    largest = largest_eigenvectors(MVM, q-1)
+    for vec in largest:
+        regressors.append(vec)
     return np.array(regressors)
 
 def find_time_series_regressors(y: np.array, cutoff: float) -> np.ndarray:
@@ -53,17 +48,19 @@ def find_time_series_regressors(y: np.array, cutoff: float) -> np.ndarray:
     inverse: np.ndarray = np.linalg.inv(np.matmul(Ri.T, Ri))
     Mi: np.ndarray = Ji - np.linalg.multi_dot([Ri, inverse, Ri.T])
     MVM: np.ndarray = np.linalg.multi_dot([Mi, V, Mi])
-    
-    regressors: list = []
-    regressors.append(R[:, 0])
-    regressors.append(R[:, 1])
-    
-    eigenvalues, eigenvectors = np.linalg.eig(MVM)
-    indices: np.ndarray = np.argsort(eigenvalues)
-    
-    i: int = len(indices)-1
-    while i >= 0 and len(regressors) < q+1:
-        regressors.append(eigenvectors[indices[i]])
-        i -= 1
-    assert len(regressors) == q+1
+
+    regressors = [R[:, 0], R[:, 1]]
+    largest = largest_eigenvectors(MVM, q-1)
+    for vec in largest:
+        regressors.append(vec)
     return np.array(regressors)
+
+def largest_eigenvectors(M: np.ndarray, q:int) -> np.ndarray:
+    """
+    Given a matrix M, finds its q largest eigenvectors
+    """
+    eigenvalues, eigenvectors = np.linalg.eigh(M)
+    idx = eigenvalues.argsort()[::-1]
+    eigenvalues = eigenvalues[idx]
+    eigenvectors = eigenvectors[:, idx]
+    return eigenvectors[:, :q].T
