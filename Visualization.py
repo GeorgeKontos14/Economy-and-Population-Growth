@@ -45,7 +45,16 @@ def plot_data_and_prediction(T: int, y: np.array, pred: np.array):
         plt.plot(range(start_idx, T), log_data[start_idx:], color='blue', linestyle='-')
 
     log_pred: np.array = np.log(pred)
-    plt.plot(log_pred, color='red', linestyle = '-')
+    start_idx = 0
+    for i in range(T):
+        if np.isnan(log_data[i]):
+            if start_idx < i:
+                plt.plot(range(start_idx, i), log_pred[start_idx:i], color='red', linestyle='-')
+            start_idx = i + 1
+
+    # Plot the last segment if it exists
+    if start_idx < T:
+        plt.plot(range(start_idx, T), log_pred[start_idx:], color='red', linestyle='-')
 
     plt.xlabel('Time')
     plt.ylabel('Logarithm of the time series')
@@ -87,7 +96,7 @@ def plot_regressors(regressors: np.ndarray, scale: float):
     x = np.linspace(0, T, T)
 
     total_height = 0
-    for i, r in enumerate(regressors):
+    for r in regressors:
         height = max(r)-min(r)
         factor = 1
         if (height > 0):
