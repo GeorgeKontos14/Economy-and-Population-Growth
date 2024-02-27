@@ -25,19 +25,13 @@ def generate_multiple_series(T: int, n: int, min_val: float, max_val: float, out
     """
     Generates multiple time series, makes a list of all of them and writes them in a csv file
     """
-    # output = open(out, "w")
     series: list = []
-    # for i in range(n):
-    #     p: float = np.random.uniform(0, 0.1)
-    #     y = generate_unbalanced_data(T, min_val, max_val, p)
-    #     series.append(y)
-    #     output.writerow(','.join(map(str, y)))
     
     with open(out, mode='w', newline='') as file:
         writer = csv.writer(file)
         for i in range(n):
             p: float = np.random.uniform(0, 0.1)
-            y = generate_unbalanced_data(T, min_val, max_val, p)
+            y = generate_AR1_missing(T, 1, min_val, max_val, p)
             series.append(y)
             writer.writerow(y)
 
@@ -54,3 +48,33 @@ def read_data(input: str) -> list:
             time_series_list.append(row)
 
     return time_series_list
+
+def scale_time_series(y: np.array, min_val: int, max_val: int) -> np.array:
+    """
+    Scale data between two values
+    """
+    curr_min: float = np.min(y)
+    curr_max: float = np.max(y)
+
+    return min_val + ((y - curr_min) / (curr_max - curr_min)) * (max_val - min_val)
+
+def generate_AR1(T: int, param: float, min_val: int, max_val: int) -> np.array:
+    """
+    Generate a time series as a AR(1) process
+    """
+    y = np.zeros(T)
+    y[0] = np.random.normal(0, 1)
+    noise = np.random.normal(0, 0.25, T)
+    for i in range(1, T):
+        y[i] = param*y[i-1]+noise[i]
+    
+    return scale_time_series(y, min_val, max_val)
+
+def generate_AR1_missing(T: int, param: float, min_val: int, max_val: int, missing_prob: float) -> np.array:
+    """
+    Generate a time series as a AR(1) process with missing values
+    """
+    scaled_data = generate_AR1(T, param, min_val, max_val)
+    missing_mask: np.array = np.random.rand(T) < missing_prob
+    scaled_data[missing_mask] = np.nan
+    return scaled_data

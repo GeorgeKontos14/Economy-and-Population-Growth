@@ -6,7 +6,7 @@ def plot_logarithm(T: int, y: np.array):
     For a given time series y that might have missing values,
     plots its logarithm
     """
-    plt.figure(figsize=(25,10))
+    plt.figure(figsize=(20,10))
 
     log_data: np.array = np.log(y)
     start_idx: int = 0
@@ -30,7 +30,7 @@ def plot_data_and_prediction(T: int, y: np.array, pred: np.array):
     plots them both on the same plot. The actual data is plotted
     in blue, while the predicted data is plotted in red.
     """
-    plt.figure(figsize=(25,10))
+    plt.figure(figsize=(20,10))
 
     log_data: np.array = np.log(y)
     start_idx: int = 0
@@ -64,7 +64,7 @@ def plot_multiple_series(series_list: list, log=True):
     """
     Given a list of time series, plots the logarithms of the series in the same plot
     """
-    plt.figure(figsize=(25,20))
+    plt.figure(figsize=(20,10))
 
     n: int = len(series_list)
     T: int = len(series_list[0])
@@ -91,7 +91,7 @@ def plot_multiple_series(series_list: list, log=True):
     
 
 def plot_regressors(regressors: np.ndarray, scale: float):
-    plt.figure(figsize=(25,15))
+    plt.figure(figsize=(20,10))
     T = len(regressors[0])
     x = np.linspace(0, T, T)
 
