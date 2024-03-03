@@ -1,16 +1,11 @@
 import numpy as np
-import scipy as sci
+import math
 
-def flat_prior(theta, min_val: float, max_val: float):
-    c: float = 1.0 / (max_val - min_val)
-    if isinstance(theta, float):
-        if theta >= min_val and theta <= max_val:
-            return c
-        return 0
-    return np.where((theta >= min_val) & (theta <= max_val), c, 0.0)
+def flat_prior(min_val: float, max_val: float):
+    return np.random.uniform(min_val, max_val)
 
 def inverse_chi1_squared(x, median):
-    gamma = sci.special.gamma(1/2)
+    gamma = math.gamma(1/2)
     if isinstance(x, float):
         if x <= 0:
             return 0
@@ -27,21 +22,28 @@ def inverse_chi1_squared(x, median):
     res[x > 0] = shifted
     return res
 
+def inverse_squared_prior(x, median):
+    pr = inverse_chi1_squared(x, median)
+    pr = pr/np.sum(pr)
+    return np.random.choice(x, p = pr)
+
 def prior_from_half_life(min_val, max_val, n):
     grid = np.linspace(min_val, max_val, n)
-    result = np.zeros(n)
-    for i, h in enumerate(grid):
-        result[i] = (1/2)**(1/h)
-    return result
+    h = np.random.choice(grid)
+    return (1/2)**(1/h)
 
-def symmetric_triangular_prior(min_val, max_val, n):
-    c = (min_val+max_val)/2
-    points = np.linspace(min_val, max_val, n)
-    res_support = ((max_val-c)-np.abs(c - points))/(max_val-c)**2
-
-    res = np.zeros(len(points))
-    res[(points >= min_val) & (points <= max_val)] = res_support
-    return res
+def symmetric_triangular_prior(a, b, n):
+    half_points = (n - 1) // 2
+    peak_index = half_points
+    
+    x = np.linspace(a, b, n)
+    y = np.zeros_like(x, dtype=float)
+    
+    for i in range(peak_index + 1):
+        y[i] = i / peak_index
+        y[n - 1 - i] = i / peak_index
+    
+    return np.random.choice(x, p=y / np.sum(y))
 
 def common_priors(theta_min, theta_max, n, alpha, m):
     thetas = np.linspace(theta_min, theta_max, n)
@@ -71,3 +73,6 @@ def group_factors(n, m):
     """
     groups = np.arange(m)
     return np.random.choice(groups, size=n)
+
+def multivariate_normal_prior(mean, cov, n=1):
+    return np.random.multivariate_normal(mean=mean, cov=cov, size=n)
