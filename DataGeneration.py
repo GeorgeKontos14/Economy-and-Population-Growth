@@ -45,7 +45,7 @@ def read_data(input: str) -> list:
     with open(input, 'r') as file:
         reader = csv.reader(file)
         for row in reader:
-            time_series_list.append(row)
+            time_series_list.append(np.array(row))
 
     return time_series_list
 

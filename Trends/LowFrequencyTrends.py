@@ -11,7 +11,8 @@ def find_trends(yi: np.array, q: int):
     # This method ONLY works for balanced data
     y: np.array = remove_isolated_values(yi)
     y_fixed = y.copy()
-    y_fixed[np.isnan(y)] = np.nanmean(y)
+    if np.isnan(y).any():
+        y_fixed[np.isnan(y)] = np.nanmean(y)
 
     regressors: np.ndarray = Regressors.find_time_series_regressors(y, q).T
     r_with_const = sm.add_constant(regressors)
