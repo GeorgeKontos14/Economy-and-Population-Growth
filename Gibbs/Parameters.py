@@ -1,6 +1,6 @@
 import numpy as np
-import Priors
-from InitializeGibbs import initialize_U_trend
+import Gibbs.Priors as Priors
+from Gibbs.Initialize import initialize_U_trend
 
 class Lambda_Parameters:
     def __init__(self, n, m):
@@ -46,3 +46,36 @@ class U_Parameters:
             h, s_h = initialize_U_trend(T, omega_squared, kappas.kappa_h_k[k], R_hat)
             self.H.append(h)
             self.S_h.append(s_h)
+
+
+class Step1_Parameters:
+    def __init__(self, C, w, n, q_hat, S_U_c, X_i):
+        self.mu_C = np.zeros(n*(q_hat+1))
+        
+        dim = (q_hat+1)*n
+        self.Sigma = np.zeros((dim, dim))
+        for i in range(n):
+            self.Sigma[i*(q_hat+1):(i+1)*(q_hat+1), i*(q_hat+1):(i+1)*(q_hat+1)] = S_U_c[i]
+
+        self.X = X_i.flatten()
+        self.B = np.zeros((dim, n*(q_hat-14)))
+        I = np.identity(q_hat+1)
+        self.ws = np.kron(w.T, I).T
+        self.Delta = np.identity(q_hat+1)*0.01**2
+        self.Cs = C.flatten()
+
+        self.V = np.zeros((dim, dim))
+
+
+class Step2_Parameters:
+    def __init__(self, n, q_hat):
+        self.mu_F = np.zeros(q_hat+1)
+        self.Sigma_F = np.zeros((q_hat+1, q_hat+1))
+
+        I = np.identity(q_hat+1)
+        self.e = np.kron(np.ones(n).T, I).T
+
+        self.V_F = np.zeros((q_hat+1, q_hat+1))
+        self.m_F = np.zeros(q_hat+1) 
+
+        self.Sigma_S = np.zeros((q_hat+1, q_hat+1))

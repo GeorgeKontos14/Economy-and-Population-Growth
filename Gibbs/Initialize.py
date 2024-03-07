@@ -1,5 +1,5 @@
 import numpy as np
-import Priors
+import Gibbs.Priors as Priors
 from Trends import LowFrequencyTrends
 
 # Methods for initialization of the Gibbs state
@@ -38,7 +38,7 @@ def initialize_S_m(T, R_hat):
     Sigma_m_hat = cov_matrix(T, rho_m)
     Sigma_m = np.linalg.inv(R_hat.T@R_hat)@R_hat.T@Sigma_m_hat@R_hat@np.linalg.inv(R_hat.T@R_hat)
     mat = Priors.multivariate_normal_prior(np.zeros(Sigma_m.shape[0]), sigma_m**2*Sigma_m)
-    return mat[0]
+    return mat[0], sigma_m, Sigma_m
 
 def inverse_squared(median):
     return Priors.inverse_squared_prior(np.linspace(0, 1000, 100000), median)
@@ -66,3 +66,14 @@ def initialize_U_trend(T, omega_squared, kappa, R_hat, lam=None):
 
     mat = Priors.multivariate_normal_prior(np.zeros(Sigma_U.shape[0]), factor*Sigma_U)
     return mat[0], factor*Sigma_U
+
+def init_Sigma_A(R_hat, T, q_hat, s_Da):
+    V: np.ndarray = np.zeros((T,T))
+    for i in range(T):
+        for j in range(T):
+            V[i][j] = min(i+1, j+1)
+
+    help = np.linalg.inv(R_hat.T@R_hat)
+    Sigma_A = help@R_hat.T@V@R_hat@help
+    A = Priors.multivariate_normal_prior(np.zeros(Sigma_A.shape[0]), s_Da**2*Sigma_A)
+    return A, Sigma_A
