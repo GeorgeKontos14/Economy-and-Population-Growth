@@ -1,28 +1,29 @@
 import numpy as np
 import Gibbs.Priors as Priors
 from Gibbs.Initialize import initialize_U_trend
+import torch
 
 class Lambda_Parameters:
-    def __init__(self, n, m):
-        self.lambda_c_i = Priors.common_priors(0, 0.95, 25, 20, n)
-        self.lambda_g_j = Priors.common_priors(0, 0.95, 25, 20, m)
+    def __init__(self, n, m, device):
+        self.lambda_c_i = torch.tensor(Priors.common_priors(0, 0.95, 25, 20, n), device=device)
+        self.lambda_g_j = torch.tensor(Priors.common_priors(0, 0.95, 25, 20, m), device=device)
 
 class Kappa_Parameters:
-    def __init__(self, n, m, l):
-        self.kappa_c_i = Priors.common_priors(1/3, 1, 25, 20, n)
-        self.kappa_g_j = Priors.common_priors(1/3, 1, 25, 20, m)
-        self.kappa_h_k = Priors.common_priors(1/3, 1, 25, 20, l)
+    def __init__(self, n, m, l, device):
+        self.kappa_c_i = torch.tensor(Priors.common_priors(1/3, 1, 25, 20, n), device = device)
+        self.kappa_g_j = torch.tensor(Priors.common_priors(1/3, 1, 25, 20, m), device = device)
+        self.kappa_h_k = torch.tensor(Priors.common_priors(1/3, 1, 25, 20, l), device = device)
 
 class P_Parameters:
-    def __init__(self):
-        self.p_c_lambda = np.random.dirichlet(np.ones(25)*20/25)
-        self.p_g_lambda = np.random.dirichlet(np.ones(25)*20/25)
-        self.p_c_theta = np.random.dirichlet(np.ones(100)*20/100)
-        self.p_g_theta = np.random.dirichlet(np.ones(100)*20/100)
-        self.p_h_theta = np.random.dirichlet(np.ones(100)*20/100)
-        self.p_c_kappa = np.random.dirichlet(np.ones(25)*20/25)
-        self.p_g_kappa = np.random.dirichlet(np.ones(25)*20/25)
-        self.p_h_k = np.random.dirichlet(np.ones(25)*20/25)
+    def __init__(self, device):
+        self.p_c_lambda = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
+        self.p_g_lambda = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
+        self.p_c_theta = torch.tensor(np.random.dirichlet(np.ones(100)*20/100), device = device)
+        self.p_g_theta = torch.tensor(np.random.dirichlet(np.ones(100)*20/100), device = device)
+        self.p_h_theta = torch.tensor(np.random.dirichlet(np.ones(100)*20/100), device = device)
+        self.p_c_kappa = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
+        self.p_g_kappa = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
+        self.p_h_k = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
 
 class U_Parameters:
     def __init__(self, omega_squared: float, lambdas: Lambda_Parameters, kappas: Kappa_Parameters, R_hat, n, m, l, T):
@@ -49,33 +50,33 @@ class U_Parameters:
 
 
 class Step1_Parameters:
-    def __init__(self, C, w, n, q_hat, S_U_c, X_i):
-        self.mu_C = np.zeros(n*(q_hat+1))
+    def __init__(self, C, w, n, q_hat, S_U_c, X_i, device):
+        self.mu_C = torch.zeros(n*(q_hat+1), device=device)
         
         dim = (q_hat+1)*n
-        self.Sigma = np.zeros((dim, dim))
+        self.Sigma = torch.zeros((dim, dim), device=device)
         for i in range(n):
             self.Sigma[i*(q_hat+1):(i+1)*(q_hat+1), i*(q_hat+1):(i+1)*(q_hat+1)] = S_U_c[i]
 
-        self.X = X_i.flatten()
+        self.X = torch.flatten(X_i)
         self.B = np.zeros((dim, n*(q_hat-14)))
         I = np.identity(q_hat+1)
-        self.ws = np.kron(w.T, I).T
-        self.Delta = np.identity(q_hat+1)*0.01**2
-        self.Cs = C.flatten()
+        self.ws = torch.tensor(np.kron(w.T, I).T, device=device)
+        self.Delta = torch.eye(q_hat+1, device=device)*0.01**2
+        self.Cs = torch.flatten(C)
 
-        self.V = np.zeros((dim, dim))
+        self.V = torch.zeros((dim, dim), device=device)
 
 
 class Step2_Parameters:
-    def __init__(self, n, q_hat):
-        self.mu_F = np.zeros(q_hat+1)
-        self.Sigma_F = np.zeros((q_hat+1, q_hat+1))
+    def __init__(self, n, q_hat, device):
+        self.mu_F = torch.zeros(q_hat+1)
+        self.Sigma_F = torch.zeros((q_hat+1, q_hat+1), device=device)
 
         I = np.identity(q_hat+1)
-        self.e = np.kron(np.ones(n).T, I).T
+        self.e = torch.tensor(np.kron(np.ones(n).T, I).T, device=device)
 
-        self.V_F = np.zeros((q_hat+1, q_hat+1))
-        self.m_F = np.zeros(q_hat+1) 
+        self.V_F = torch.zeros((q_hat+1, q_hat+1), device=device)
+        self.m_F = torch.zeros(q_hat+1, device=device) 
 
-        self.Sigma_S = np.zeros((q_hat+1, q_hat+1))
+        self.Sigma_S = torch.zeros((q_hat+1, q_hat+1), device=device)
