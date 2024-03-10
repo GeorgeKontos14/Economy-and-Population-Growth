@@ -45,16 +45,12 @@ def initialize_F(X_i, w, q_hat):
     mat = torch.matmul(w, X_i) - Y0
     return mat
 
-def initialize_S_m(T, R_hat):
+def initialize_S_m(T, R_hat, device):
     """
     Draw S_m from a multivariate normal distribution
     T: Length of the time series
     R_hat: low-frequency regressors
     """
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu")
     sigma_m = float(Priors.symmetric_triangular_prior(0.001, 0.02, 25))
     rho_m = Priors.prior_from_half_life(50,150,25)
     Sigma_m_hat = cov_matrix(T, rho_m)
