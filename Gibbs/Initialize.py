@@ -88,7 +88,7 @@ def initialize_U_trend(T, omega_squared, kappa, R_hat, lam=None):
     factor = omega_squared*kappa
     if lam is not None:
         factor = factor*(1-lam**2)
-
+    factor = factor.item()
     mat = Priors.multivariate_normal_prior(np.zeros(Sigma_U.shape[0]), factor*Sigma_U)
     return torch.tensor(mat[0], device=device), torch.tensor(factor*Sigma_U, device=device)
 
