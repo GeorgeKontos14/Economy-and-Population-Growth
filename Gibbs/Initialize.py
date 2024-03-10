@@ -27,15 +27,23 @@ def initialize_F(X_i, w, q_hat):
     w: The population weights for each country.
     q_hat: Cut-off
     """
+    print(X_i.device)
+    print(w.device)
     # Delta = np.identity(q_hat+1)*0.01**2
     if torch.cuda.is_available():
         device = torch.device("cuda")
-        Delta = torch.eye(q_hat+1, device=device)*0.01**2
-        dist = torch.distributions.MultivariateNormal(torch.zeros(q_hat+1, device=device), Delta)
-        Y0 = dist.sample()
-        Y0 = Y0.cuda()
-        mat = torch.matmul(w, X_i) - Y0
-        return mat
+    else:
+        device = torch.device("cpu")    
+    Delta = torch.eye(q_hat+1, device=device)*0.01**2
+    print(Delta.device)
+    dist = torch.distributions.MultivariateNormal(torch.zeros(q_hat+1, device=device), Delta)
+    Y0 = dist.sample()
+    Y0 = Y0.cuda()
+    print(Y0.device)
+        
+
+    mat = torch.matmul(w, X_i) - Y0
+    return mat
 
 def initialize_S_m(T, R_hat):
     """
@@ -53,7 +61,7 @@ def initialize_S_m(T, R_hat):
     Sigma_m = np.linalg.inv(R_hat.T@R_hat)@R_hat.T@Sigma_m_hat@R_hat@np.linalg.inv(R_hat.T@R_hat)
     Sigma_m = torch.tensor(Sigma_m, dtype=float, device = device)
     # mat = Priors.multivariate_normal_prior(np.zeros(Sigma_m.shape[0]), sigma_m**2*Sigma_m)
-    dist = torch.distributions.MultivariateNormal(torch.zeros(Sigma_m.shape[0], dtype=float), sigma_m**2*Sigma_m)
+    dist = torch.distributions.MultivariateNormal(torch.zeros(Sigma_m.shape[0], dtype=float, device=device), sigma_m**2*Sigma_m)
     mat = dist.sample()
     return mat, sigma_m, Sigma_m
 
