@@ -26,25 +26,25 @@ class P_Parameters:
         self.p_h_k = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
 
 class U_Parameters:
-    def __init__(self, omega_squared: float, lambdas: Lambda_Parameters, kappas: Kappa_Parameters, R_hat, n, m, l, T):
+    def __init__(self, omega_squared: float, lambdas: Lambda_Parameters, kappas: Kappa_Parameters, R_hat, n, m, l, T, device):
         self.U_c = []
         self.S_U_c = []
         for i in range(n):
-            u_c, s_c = initialize_U_trend(T, omega_squared, kappas.kappa_c_i[i], R_hat, lam=lambdas.lambda_c_i[i])
+            u_c, s_c = initialize_U_trend(T, omega_squared, kappas.kappa_c_i[i], R_hat, device, lam=lambdas.lambda_c_i[i])
             self.S_U_c.append(s_c)
             self.U_c.append(u_c)
             
         self.U_g = []
         self.S_U_g = []
         for j in range(m):
-            u_g, s_g = initialize_U_trend(T, omega_squared, kappas.kappa_g_j[j], R_hat, lam=lambdas.lambda_g_j[j])
+            u_g, s_g = initialize_U_trend(T, omega_squared, kappas.kappa_g_j[j], R_hat, device, lam=lambdas.lambda_g_j[j])
             self.U_g.append(u_g)
             self.S_U_g.append(s_g)
         
         self.H = []
         self.S_h = []
         for k in range(l):
-            h, s_h = initialize_U_trend(T, omega_squared, kappas.kappa_h_k[k], R_hat)
+            h, s_h = initialize_U_trend(T, omega_squared, kappas.kappa_h_k[k], R_hat, device)
             self.H.append(h)
             self.S_h.append(s_h)
 

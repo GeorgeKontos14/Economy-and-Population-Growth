@@ -72,11 +72,7 @@ def cov_matrix(T, rho_m):
             Sigma_m_hat[i][j] = (innov_variance/(1-rho_m**2))*(rho_m**abs(i-j))
     return Sigma_m_hat    
 
-def initialize_U_trend(T, omega_squared, kappa, R_hat, lam=None):
-    if torch.cuda.is_available():
-        device = torch.device("cuda")
-    else:
-        device = torch.device("cpu") 
+def initialize_U_trend(T, omega_squared, kappa, R_hat, device, lam=None):
     rho_1, rho_2, zeta = Priors.persistence_u(100)
     mat1 = cov_matrix(T, rho_1)
     mat2 = cov_matrix(T, rho_2)
