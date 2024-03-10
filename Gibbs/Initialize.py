@@ -32,12 +32,10 @@ def initialize_F(X_i, w, q_hat):
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")
-    Delta = torch.eye(q_hat+1)*0.01**2
-    # Y0 = Priors.multivariate_normal_prior(np.zeros(Delta.shape[0]), Delta)
-    dist = torch.distributions.MultivariateNormal(torch.zeros(q_hat+1), Delta)
+    Delta = torch.eye(q_hat+1, device=device)*0.01**2
+    dist = torch.distributions.MultivariateNormal(torch.zeros(q_hat+1, device=device), Delta)
     Y0 = dist.sample()
     Y0 = Y0.cuda()
-    # mat = np.matmul(w, X_i) - Y0
     mat = torch.matmul(w, X_i) - Y0
     return mat
 
