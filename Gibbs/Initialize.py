@@ -27,19 +27,14 @@ def initialize_F(X_i, w, q_hat):
     w: The population weights for each country.
     q_hat: Cut-off
     """
-    print(X_i.device)
-    print(w.device)
     # Delta = np.identity(q_hat+1)*0.01**2
     if torch.cuda.is_available():
         device = torch.device("cuda")
     else:
         device = torch.device("cpu")    
     Delta = torch.eye(q_hat+1, device=device)*0.01**2
-    print(Delta.device)
     dist = torch.distributions.MultivariateNormal(torch.zeros(q_hat+1, device=device), Delta)
     Y0 = dist.sample()
-    Y0 = Y0.cuda()
-    print(Y0.device)
         
 
     mat = torch.matmul(w, X_i) - Y0
