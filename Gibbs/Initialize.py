@@ -81,7 +81,7 @@ def initialize_U_trend(T, omega_squared, kappa, R_hat, device, lam=None):
         factor = factor*(1-lam**2)
     factor = factor.item()
     mat = Priors.multivariate_normal_prior(np.zeros(Sigma_U.shape[0]), factor*Sigma_U)
-    return torch.tensor(mat[0], device=device), torch.tensor(factor*Sigma_U, device=device)
+    return torch.tensor(mat[0], device=device), torch.tensor(factor*Sigma_U, device=device), torch.tensor([rho_1, rho_2, zeta], device=device)
 
 def init_Sigma_A(R_hat, T, q_hat, s_Da):
     if torch.cuda.is_available():
