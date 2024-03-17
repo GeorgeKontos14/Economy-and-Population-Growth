@@ -48,7 +48,7 @@ def iterate_step6(omega_squared, p_parameters, kappa_param, S_U, mu_c, C_vec, G_
     else:
         probs = torch.tensor(probs, device=device)
     ind = torch.multinomial(probs, 1).item()
-    return grid_points[ind]    
+    return grid_points[ind].item()    
 
 def iterate_step7(omega_squared, p_parameters, kappa_param, S_U, G_vec, H_vec, q_hat, grid_points, device):
     probs = []
@@ -63,7 +63,7 @@ def iterate_step7(omega_squared, p_parameters, kappa_param, S_U, G_vec, H_vec, q
     else:
         probs = torch.tensor(probs, device=device)
     ind = torch.multinomial(probs, 1).item()
-    return grid_points[ind]    
+    return grid_points[ind].item()    
 
 def iterate_step8(U, p_parameters, kappa_param, U_c_i, omega_squared, lambda_param, device):
     probs = []
@@ -127,4 +127,58 @@ def iterate_step10(U, p_parameters, kappa_param, H_k, omega_squared, device):
         probs = torch.ones(100, device=device)
         ind = torch.multinomial(probs, 1).item()
     return U.thetas[ind]
+
+def iterate_step12(p_parameters, lambda_param, U_c, inv_U, omega_squared, grid_points, q_hat, device):
+    probs = []
+    for j, point in enumerate(grid_points):
+        denom = omega_squared*point**2*(1-lambda_param**2)
+        num = torch.linalg.multi_dot([U_c.t(), inv_U, U_c])
+        expon = torch.exp(-0.5*num/denom)
+        scaled = expon
+        p = p_parameters.p_c_kappa[j]*scaled*point**(-(q_hat+1))
+        probs.append(p.item())
+    ind = -1
+    try:
+        probs = torch.tensor(probs, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    except Exception as e:
+        probs = torch.ones(25, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    return grid_points[ind].item()
+
+def iterate_step13(p_parameters, lambda_param, U_g, inv_U, omega_squared, grid_points, q_hat, device):
+    probs = []
+    for j, point in enumerate(grid_points):
+        denom = omega_squared*point**2*(1-lambda_param**2)
+        num = torch.linalg.multi_dot([U_g.t(), inv_U, U_g])
+        expon = torch.exp(-0.5*num/denom)
+        scaled = expon
+        p = p_parameters.p_g_kappa[j]*scaled*point**(-(q_hat+1))
+        probs.append(p.item())
+    ind = -1
+    try:
+        probs = torch.tensor(probs, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    except Exception as e:
+        probs = torch.ones(25, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    return grid_points[ind].item()
+
+def iterate_step14(p_parameters, H, inv_U, omega_squared, grid_points, q_hat, device):
+    probs = []
+    for j, point in enumerate(grid_points):
+        denom = omega_squared*point**2
+        num = torch.linalg.multi_dot([H.t().float(), inv_U.float(), H.float()])
+        expon = torch.exp(-0.5*num/denom)
+        scaled = expon
+        p = p_parameters.p_h_k[j]*scaled*point**(-(q_hat+1))
+        probs.append(p.item())
+    ind = -1
+    try:
+        probs = torch.tensor(probs, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    except Exception as e:
+        probs = torch.ones(25, device=device)
+        ind = torch.multinomial(probs, 1).item()
+    return grid_points[ind].item()
 

@@ -132,14 +132,14 @@ def step6(omega_squared, kappas, U, p_parameters, mu_c, C, G, J, q_hat, n, devic
     new_lambda_c_i = []
     for i in range(n):
         new_lambda_c_i.append(iterate_step6(omega_squared, p_parameters=p_parameters, kappa_param=kappas.kappa_c_i[i], S_U=U.S_U_c(i), mu_c=mu_c, C_vec=C[i], G_vec = G[J[i]], q_hat=q_hat, grid_points=grid_points, device=device))
-    return new_lambda_c_i
+    return torch.tensor(new_lambda_c_i, device=device)
 
 def step7(omega_squared, p_parameters, kappas, U, G, m, K, q_hat, device):
     grid_points = torch.linspace(0, 0.95, 25)
     new_lambda_g_j = []
     for i in range(m):
         new_lambda_g_j.append(iterate_step7(omega_squared, p_parameters, kappas.kappa_g_j[i], U.S_U_g(i), G[i], U.H[K[i]], q_hat, grid_points, device=device))
-    return new_lambda_g_j
+    return torch.tensor(new_lambda_g_j, device=device)
 
 def step8(omega_squared, p_parameters, kappas, lambdas, U, X_i, F, mu_c, G, J, q_hat, n, device):
     new_U = StepsHelper.update_U_c_i(U.U_c, X_i, F, mu_c, lambdas, G, J, q_hat, device)
@@ -160,4 +160,50 @@ def step10(omega_squared, p_parameters, kappas, U, l, device):
     for i in range(l):
         new_thetas.append(iterate_step10(U, p_parameters, kappas.kappa_h_k[i], U.H[i], omega_squared, device))
     return new_thetas
+
+def step11(n, m, l, kappas, lambdas, U, q_hat):
+    S_c_squared = 0
+    for i in range(n):
+        factor = 1/(kappas.kappa_c_i[i]**2*(1-lambdas.lambda_c_i[i]**2))
+        prod = torch.linalg.multi_dot([U.U_c[i].t(), U.inv_U_c(i), U.U_c[i]])
+        S_c_squared += prod.item()*factor.item()
+    
+    S_g_squared = 0
+    for i in range(m):
+        factor = 1/(kappas.kappa_g_j[i]**2*(1-lambdas.lambda_g_j[i]**2))
+        prod = torch.linalg.multi_dot([U.U_g[i].t(), U.inv_U_g(i), U.U_g[i]])
+        S_g_squared += prod.item()*factor.item()
+
+    S_h_squared = 0
+    for i in range(l):
+        factor = 1/(kappas.kappa_h_k[i]**2)
+        prod = torch.linalg.multi_dot([U.H[i].t().float(), U.inv_h(i).float(), U.H[i].float()])
+        S_h_squared += prod.item()*factor.item()
+
+    freedom = 1+(n+m+l)*(q_hat+1)
+    dist = torch.distributions.Chi2(df=freedom)
+    samp = dist.sample()
+    added = 1/2.198
+    return (added+S_c_squared+S_g_squared+S_h_squared)/samp.item()
+
+def step12(omega_squared, p_parameters, lambdas, U, q_hat, n, device):
+    grid_points = torch.linspace(1/3,1, 25)
+    new_kappas = []
+    for i in range(n):
+        new_kappas.append(iterate_step12(p_parameters, lambdas.lambda_c_i[i], U.U_c[i], U.inv_U_c(i), omega_squared, grid_points, q_hat, device))
+    return torch.tensor(new_kappas, device=device)
+
+def step13(omega_squared, p_parameters, lambdas, U, q_hat, m, device):
+    grid_points = torch.linspace(1/3,1, 25)
+    new_kappas = []
+    for i in range(m):
+        new_kappas.append(iterate_step13(p_parameters, lambdas.lambda_g_j[i], U.U_g[i], U.inv_U_g(i), omega_squared, grid_points, q_hat, device))
+    return torch.tensor(new_kappas, device=device)
+
+def step14(omega_squared, p_parameters, U, q_hat, l, device):
+    grid_points = torch.linspace(1/3,1, 25)
+    new_kappas = []
+    for i in range(l):
+        new_kappas.append(iterate_step14(p_parameters, U.H[i], U.inv_h(i), omega_squared, grid_points, q_hat, device))
+    return torch.tensor(new_kappas, device=device)
 
