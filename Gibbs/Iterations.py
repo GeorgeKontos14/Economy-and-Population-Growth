@@ -182,3 +182,39 @@ def iterate_step14(p_parameters, H, inv_U, omega_squared, grid_points, q_hat, de
         ind = torch.multinomial(probs, 1).item()
     return grid_points[ind].item()
 
+def iterate_step15(omega_squared, kappa_param, lambda_param, inv_U, C_i, mu_c, G, m, q_hat, device):
+    probs = []
+    i_1 = torch.zeros(q_hat+1, device=device)
+    i_1[0] = 1
+    for j in range(m):
+        gamma = C_i-mu_c*i_1-lambda_param*G[j]
+        factor = 1/(omega_squared*kappa_param**2*(1-lambda_param**2))
+        mat = torch.linalg.multi_dot([gamma, inv_U, gamma])
+        expon = -0.5*factor*mat
+        p = torch.exp(expon)
+        probs.append(p.item())
+    
+    try:
+        probs = torch.tensor(probs, device=device)
+        return torch.multinomial(probs, 1).item()
+    except Exception as e:
+        probs = torch.ones(m, device=device)
+        return torch.multinomial(probs, 1).item()
+    
+def iterate_step16(omega_squared, kappa_param, lambda_param, inv_U, G_j, H, l, device):
+    probs = []
+    for k in range(l):
+        gamma = G_j - lambda_param*H[k]
+        factor = 1/(omega_squared*kappa_param**2*(1-lambda_param**2))
+        mat = torch.linalg.multi_dot([gamma, inv_U, gamma])
+        expon = -0.5*factor*mat
+        p = torch.exp(expon)
+        probs.append(p.item())
+    
+    try:
+        probs = torch.tensor(probs, device=device)
+        return torch.multinomial(probs, 1).item()
+    except Exception as e:
+        probs = torch.ones(l, device=device)
+        return torch.multinomial(probs, 1).item()
+    

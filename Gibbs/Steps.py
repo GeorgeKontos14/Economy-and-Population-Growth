@@ -207,3 +207,15 @@ def step14(omega_squared, p_parameters, U, q_hat, l, device):
         new_kappas.append(iterate_step14(p_parameters, U.H[i], U.inv_h(i), omega_squared, grid_points, q_hat, device))
     return torch.tensor(new_kappas, device=device)
 
+def step15(omega_squared, kappas, lambdas, C, G, U, n, m, mu_c, q_hat, device):
+    new_J = []
+    for i in range(n):
+        new_J.append(iterate_step15(omega_squared, kappas.kappa_c_i[i], lambdas.lambda_c_i[i], U.inv_U_c(i), C[i], mu_c, G, m, q_hat, device))
+    return torch.tensor(new_J, device=device)
+
+def step16(omega_squared, kappas, lambdas, G, U, m, l, device):
+    new_K = []
+    for i in range(m):
+        new_K.append(iterate_step16(omega_squared, kappas.kappa_g_j[i], lambdas.lambda_g_j[i], U.inv_U_g(i), G[i], U.H, l, device))
+    return torch.tensor(new_K, device=device)
+
