@@ -2,6 +2,7 @@ import numpy as np
 import Gibbs.Priors as Priors
 from Trends import LowFrequencyTrends
 import torch
+from Gibbs import StepsHelper
 
 # Methods for initialization of the Gibbs state
 def initialize_X(data, q):
@@ -67,21 +68,27 @@ def cov_matrix(T, rho_m):
             Sigma_m_hat[i][j] = (innov_variance/(1-rho_m**2))*(rho_m**abs(i-j))
     return Sigma_m_hat    
 
-def initialize_U_trend(T, omega_squared, kappa, R_hat, device, lam=None):
-    rho_1, rho_2, zeta = Priors.persistence_u(100)
-    mat1 = cov_matrix(T, rho_1)
-    mat2 = cov_matrix(T, rho_2)
-    weight_2 = (1-zeta**2)**(1/2)
-    a = zeta/(zeta+weight_2)
-    b = weight_2/(zeta+weight_2)
-    Sigma_U_hat = a*mat1+b*mat2
-    Sigma_U = np.linalg.inv(R_hat.T@R_hat)@R_hat.T@Sigma_U_hat@R_hat@np.linalg.inv(R_hat.T@R_hat)
+def initialize_U_trend(T, omega_squared, kappa, map, device, lam=None):
+    rho_1, rho_2, zeta = Priors.persistence_u()
+    Sigma_U = map[(rho_1, rho_2, zeta)]
     factor = omega_squared*kappa
     if lam is not None:
         factor = factor*(1-lam**2)
     factor = factor.item()
-    mat = Priors.multivariate_normal_prior(np.zeros(Sigma_U.shape[0]), factor*Sigma_U)
-    return torch.tensor(mat[0], device=device), torch.tensor(factor*Sigma_U, device=device), torch.tensor([rho_1, rho_2, zeta], device=device)
+    dist = torch.distributions.MultivariateNormal(torch.zeros(Sigma_U.shape[0], device=device).double(), StepsHelper.make_positive_definite(factor*Sigma_U).double())
+    return dist.sample(), (rho_1, rho_2, zeta)
+    # mat = Priors.multivariate_normal_prior(np.zeros(Sigma_U.shape[0]), factor*Sigma_U)
+    # return torch.tensor(mat[0], device=device), torch.tensor(factor*Sigma_U, device=device), torch.tensor([rho_1, rho_2, zeta], device=device)
+
+def calculate_Sigma_U(theta, T, R_hat, device):
+    mat1 = torch.tensor(cov_matrix(T, theta[0]), device=device)
+    mat2 = torch.tensor(cov_matrix(T, theta[1]), device=device)
+    weight_2 = (1-theta[2]**2)**(1/2)
+    a = theta[2]/(theta[2]+weight_2)
+    b = weight_2/(theta[2]+weight_2)
+    Sigma_U_hat = a*mat1+b*mat2
+    inv_R = torch.inverse(torch.matmul(R_hat.T, R_hat))
+    return torch.linalg.multi_dot([inv_R, R_hat.T, Sigma_U_hat, R_hat, inv_R])
 
 def init_Sigma_A(R_hat, T, q_hat, s_Da):
     if torch.cuda.is_available():
@@ -98,3 +105,20 @@ def init_Sigma_A(R_hat, T, q_hat, s_Da):
     Sigma_A = help@R_hat.T@V@R_hat@help
     A = Priors.multivariate_normal_prior(np.zeros(Sigma_A.shape[0]), s_Da**2*Sigma_A)
     return torch.tensor(A[0], device=device), torch.tensor(Sigma_A, device=device)
+
+class Theta:
+    def __init__(self, rho_1, rho_2, zeta):
+        self.rho_1 = rho_1
+        self.rho_2 = rho_2
+        self.zeta = zeta
+
+    def __eq__(self, other):
+        if isinstance(other, Theta):
+            return (self.rho_1, self.rho_2, self.zeta) == (other.rho_1, other.rho_2, other.zeta)
+        return False
+    
+    def __hash__(self):
+        return hash((self.rho_1, self.rho_2, self.zeta))
+    
+    def __str__(self):
+        return f"Theta({self.rho_1}, {self.rho_2}, {self.zeta})"

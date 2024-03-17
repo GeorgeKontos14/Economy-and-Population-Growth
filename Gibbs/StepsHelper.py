@@ -41,3 +41,17 @@ def draw_independent_samples(mean, covariance, num_blocks, num_samples=1):
     samples = torch.cat(samples, dim=1)
     
     return samples[0]
+
+def update_U_c_i(U_c, X_i, F, mu_c, lambdas, G, J, q_hat, device):
+    new_U = []
+    i_1 = torch.zeros(q_hat+1, device=device)
+    i_1[0] = 0
+    for i in range(len(U_c)):
+        new_U.append(X_i[i]-F-mu_c*i_1-lambdas.lambda_c_i[i]*G[J[i]])
+    return new_U
+
+def update_U_g_j(U_g, G, lambdas, K, H):
+    new_U = []
+    for i in range(len(U_g)):
+        new_U.append(G[i]-lambdas.lambda_g_j[i]*H[K[i]])
+    return new_U

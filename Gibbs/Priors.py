@@ -1,5 +1,6 @@
 import numpy as np
 import math
+import torch
 
 def flat_prior(min_val: float, max_val: float):
     return np.random.uniform(min_val, max_val)
@@ -51,20 +52,22 @@ def common_priors(theta_min, theta_max, n, alpha, m):
     prior = np.random.dirichlet(params)
     return np.random.choice(thetas, size=m, p=prior)
 
-def persistence_u(n):
-    x = np.linspace(0,1,n)
-    xx, yy, zz = np.meshgrid(x,x,x)
-    grid = np.column_stack([xx.ravel(), yy.ravel(), zz.ravel()])
+def persistence_u():
+    x = torch.linspace(0, 1-0.00001, 5)
+    y = torch.linspace(0, 1-0.00001, 5)
+    z = torch.linspace(0, 1-0.00001, 4)
+    X, Y, Z = torch.meshgrid(x, y, z, indexing="ij")
+    grid = torch.stack([X.flatten(), Y.flatten(), Z.flatten()], dim=1) 
 
     U1, U2, zeta = grid[np.random.choice(len(grid))]
 
     h1 = 25+775*U1**2
     h2 = 25+775*U2**2
 
-    rho1 = 0.5**(1/max(h1, 0.0001)) # Avoid division by zero
-    rho2 = 0.5**(1/max(h2, 0.0001))
+    rho1 = 0.5**(1/max(h1, 0.00001))
+    rho2 = 0.5**(1/max(h2, 0.00001))
     
-    return rho1, rho2, zeta
+    return rho1.item(), rho2.item(), zeta.item()
 
 def group_factors(n, m):
     """
