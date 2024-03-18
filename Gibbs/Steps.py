@@ -60,7 +60,7 @@ def step1(X_i, U, w, ws, Delta, Y, C, G, J, F, mu_c, lambdas, n, q_hat, device):
     Sigma = torch.zeros((dim, dim), device=device)
     for i in range(n):
         Sigma[i*(q_hat+1):(i+1)*(q_hat+1), i*(q_hat+1):(i+1)*(q_hat+1)] = U.S_U_c(i)
-    Y0 = torch.matmul(w, C)
+    Y0 = torch.matmul(w.float(), C.float())
     i_1 = torch.zeros(q_hat+1, device=device)
     i_1[0] = 1
     mu_C = torch.cat([mu_c*i_1.t()+lambdas.lambda_c_i[i]*G[J[i]].t() for i in range(n)]).t()
@@ -171,13 +171,13 @@ def step11(n, m, l, kappas, lambdas, U, q_hat):
     S_c_squared = 0
     for i in range(n):
         factor = 1/(kappas.kappa_c_i[i]**2*(1-lambdas.lambda_c_i[i]**2))
-        prod = torch.linalg.multi_dot([U.U_c[i].t(), U.inv_U_c(i), U.U_c[i]])
+        prod = torch.linalg.multi_dot([U.U_c[i].t().float(), U.inv_U_c(i).float(), U.U_c[i].float()])
         S_c_squared += prod.item()*factor.item()
     
     S_g_squared = 0
     for i in range(m):
         factor = 1/(kappas.kappa_g_j[i]**2*(1-lambdas.lambda_g_j[i]**2))
-        prod = torch.linalg.multi_dot([U.U_g[i].t(), U.inv_U_g(i), U.U_g[i]])
+        prod = torch.linalg.multi_dot([U.U_g[i].t().float(), U.inv_U_g(i).float(), U.U_g[i].float()])
         S_g_squared += prod.item()*factor.item()
 
     S_h_squared = 0
