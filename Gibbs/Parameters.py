@@ -1,6 +1,6 @@
 import numpy as np
 import Gibbs.Priors as Priors
-from Gibbs.Initialize import initialize_U_trend, calculate_Sigma_U, Theta
+from Gibbs.Initialize import initialize_U_trend, calculate_Sigma_U, cov_matrix
 import torch
 
 class Lambda_Parameters:
@@ -24,7 +24,12 @@ class P_Parameters:
         self.p_c_kappa = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
         self.p_g_kappa = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
         self.p_h_k = torch.tensor(np.random.dirichlet(np.ones(25)*20/25), device = device)
-
+        peak_index = 12
+        self.p_s_m = torch.zeros(25, device=device)
+        for i in range(13):
+            self.p_s_m[i] = i / peak_index
+            self.p_s_m[24-i] = i / peak_index
+        
 class U_Parameters:
     def __init__(self, omega_squared: float, lambdas: Lambda_Parameters, kappas: Kappa_Parameters, R_hat, n, m, l, T, device):
         x = torch.linspace(0, 1-0.00001, 5)
@@ -46,6 +51,20 @@ class U_Parameters:
             mat = calculate_Sigma_U(theta, T, torch.tensor(R_hat, device=device), device)
             self.Sigma_U[theta] = mat
             self.inv_Sigma[theta] = torch.inverse(mat)
+
+        half_lifes = np.linspace(50, 150, 25)
+        self.rhos = []
+        self.Sigma_ms = {}
+        self.inv_Sigma_ms = {}
+        for h in half_lifes:
+            rho = (1/2)**(1/h)
+            self.rhos.append(rho)
+            Sigma_m_hat = cov_matrix(T, rho)
+            Sigma_m = np.linalg.inv(R_hat.T@R_hat)@R_hat.T@Sigma_m_hat@R_hat@np.linalg.inv(R_hat.T@R_hat)
+            Sigma_m = torch.tensor(Sigma_m, dtype=float, device = device) 
+            self.Sigma_ms[rho] = Sigma_m     
+            self.inv_Sigma_ms[rho] = torch.inverse(Sigma_m)       
+
         self.U_c = []
         self.theta_c_i = []
         for i in range(n):
@@ -91,18 +110,19 @@ class U_Parameters:
     
     def lookup_inv(self, i):
         return self.inv_Sigma[self.thetas[i]]
+    
+    def Sigma(self, rho):
+        return self.Sigma_ms[rho]
+    
+    def inv_Sigma_m(self, rho):
+        return self.inv_Sigma_ms[rho]
 
 
 def step1_params(q_hat, n, U, w, device):
-    dim = (q_hat+1)*n
-    Sigma = torch.zeros((dim, dim), device=device)
-    for i in range(n):
-        Sigma[i*(q_hat+1):(i+1)*(q_hat+1), i*(q_hat+1):(i+1)*(q_hat+1)] = U.S_U_c(i)
-
     I = torch.eye(q_hat+1, device=device)
     ws = torch.kron(w.t(), I).t()
     Delta = torch.eye(q_hat+1, device=device)*0.01**2
-    return Sigma, I, ws, Delta
+    return I, ws, Delta
 
 def step2_params(n, I, device):
    return torch.kron(torch.ones(n, device=device).t(), I).t()

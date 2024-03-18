@@ -55,10 +55,13 @@ def initialize_S_m(T, R_hat, device):
     # mat = Priors.multivariate_normal_prior(np.zeros(Sigma_m.shape[0]), sigma_m**2*Sigma_m)
     dist = torch.distributions.MultivariateNormal(torch.zeros(Sigma_m.shape[0], dtype=float, device=device), sigma_m**2*Sigma_m)
     mat = dist.sample()
-    return mat, sigma_m, Sigma_m
+    return mat, sigma_m, Sigma_m, rho_m
 
 def inverse_squared(median):
-    return Priors.inverse_squared_prior(np.linspace(0, 1000, 100000), median)
+    num = median/2.198
+    dist = torch.distributions.Chi2(df=1)
+    samp = dist.sample()
+    return num/samp.item()
 
 def cov_matrix(T, rho_m):
     Sigma_m_hat = np.zeros((T,T))
@@ -105,20 +108,3 @@ def init_Sigma_A(R_hat, T, q_hat, s_Da):
     Sigma_A = help@R_hat.T@V@R_hat@help
     A = Priors.multivariate_normal_prior(np.zeros(Sigma_A.shape[0]), s_Da**2*Sigma_A)
     return torch.tensor(A[0], device=device), torch.tensor(Sigma_A, device=device)
-
-class Theta:
-    def __init__(self, rho_1, rho_2, zeta):
-        self.rho_1 = rho_1
-        self.rho_2 = rho_2
-        self.zeta = zeta
-
-    def __eq__(self, other):
-        if isinstance(other, Theta):
-            return (self.rho_1, self.rho_2, self.zeta) == (other.rho_1, other.rho_2, other.zeta)
-        return False
-    
-    def __hash__(self):
-        return hash((self.rho_1, self.rho_2, self.zeta))
-    
-    def __str__(self):
-        return f"Theta({self.rho_1}, {self.rho_2}, {self.zeta})"

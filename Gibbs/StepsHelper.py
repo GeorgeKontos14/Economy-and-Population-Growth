@@ -55,3 +55,18 @@ def update_U_g_j(U_g, G, lambdas, K, H):
     for i in range(len(U_g)):
         new_U.append(G[i]-lambdas.lambda_g_j[i]*H[K[i]])
     return new_U
+
+def update_A(F, f_0, mu_m, S_m, q_hat, device):
+    i_1 = torch.zeros(q_hat+1, device=device)
+    i_2 = torch.zeros(q_hat+1, device=device)
+    i_1[0] = i_2[1] = 1
+    return F-i_1*f_0+i_2*mu_m-S_m
+
+def count_occurrences(A, B):
+    counts_B = torch.stack([(B == val).sum() for val in A])
+    result = {val.item(): count.item() for val, count in zip(A, counts_B)}
+    return result
+
+def count_tuples(A, B):
+    result = {tuple_A: B.count(tuple_A) for tuple_A in A} 
+    return result
