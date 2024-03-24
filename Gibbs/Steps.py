@@ -8,6 +8,7 @@ from Gibbs.Iterations import *
 import torch
 import random
 import numpy as np
+from StoreData import *
 
 def initialize(data, n, m, l, T, q, q_hat, device):
   R_hat = Regressors.find_regressors(T, q_hat).T
@@ -364,3 +365,154 @@ def step28(kappas, device):
         dist = torch.distributions.Chi2(df=freedom)
         Ws[i] = dist.sample().item()
     return Ws/torch.sum(Ws)
+
+def run_Gibbs(data, n, m, l, w, T, q, q_hat, burn_in, draws, device):
+    X_i, F, S_m, sigma_m, Sigma_m, rho_m, K, J, lambdas, kappas, p_parameters, s_Da, A, Sigma_A, f_0, mu_m, mu_c, omega_squared, U, G, C, Y, R_hat = initialize(data, n, m, l, T, q, q_hat, device)
+    I, ws, Delta = step1_params(q_hat, n, U, w, device)
+    e = step2_params(n, I, device)
+    iterations = burn_in+draws
+    X_list = []
+    F_list = []
+    S_m_list = []
+    G_list = []
+    H_list = []
+    l_c_i_list = []
+    l_g_j_list = []
+    theta_c_i_list = []
+    theta_g_j_list = []
+    theta_h_k_list = []
+    kappa_c_i_list = []
+    kappa_g_j_list = []
+    kappa_h_k_list = []
+    J_list = []
+    K_list = []
+    p_c_l_list = []
+    p_g_l_list = []
+    p_c_th_list = []
+    p_g_th_list = []
+    p_h_th_list = []
+    p_c_k_list = []
+    p_g_k_list = []
+    p_h_k_list = []
+    sDa_list = []
+    mu_c_list = []
+    sigma_m_list = []
+    rho_m_list = []
+    omega_list = []
+    for counter in range(iterations):
+        X_i, C, Sigma, mu_C, Y0, X = step1(X_i, U, w, ws, Delta, Y, C, G, J, F, mu_c, lambdas, n, q_hat, device)
+        F, S_m, Sigma_F = step2(e, f_0, mu_m, sigma_m, Sigma_m, s_Da, Sigma_A, Sigma, Delta, mu_C, ws, q_hat, X, Y0, device)
+        G, inv_g_j, inv_c_i = step3(omega_squared, lambdas, kappas,  mu_c, K, J, q_hat, m, n, C, U, device)
+        U.H, inv_h_k = step4(lambdas, kappas, U, omega_squared, K, G, inv_g_j, l, q_hat, device)
+        mu_c = step5(q_hat, lambdas, C, G, J, inv_c_i, n, device)
+        lambdas.lambda_c_i = step6(omega_squared, kappas, U, p_parameters, mu_c, C, G, J, q_hat, n, device)
+        lambdas.lambda_g_j = step7(omega_squared, p_parameters, kappas, U, G, m, K, q_hat, device)
+        U.U_c, U.theta_c_i = step8(omega_squared, p_parameters, kappas, lambdas, U, X_i, F, mu_c, G, J, q_hat, n, device)
+        U.U_g, U.theta_g_j = step9(omega_squared, p_parameters, kappas, lambdas, U, G, K, m, device)
+        U.theta_h_k = step10(omega_squared, p_parameters, kappas, U, l, device)
+        omega_squared = step11(n, m, l, kappas, lambdas, U, q_hat)
+        kappas.kappa_c_i = step12(omega_squared, p_parameters, lambdas, U, q_hat, n, device)
+        kappas.kappa_g_j = step13(omega_squared, p_parameters, lambdas, U, q_hat, m, device)
+        kappas.kappa_h_k = step14(omega_squared, p_parameters, U, q_hat, l, device)
+        J = step15(omega_squared, kappas, lambdas, C, G, U, n, m, mu_c, q_hat, device)
+        K = step16(omega_squared, kappas, lambdas, G, U, m, l, device)
+        f_0, mu_m = step17(F, Sigma_F, q_hat, device)
+        s_Da, A = step18(F, S_m, Sigma_A, f_0, mu_m, q_hat, device)
+        sigma_m = step19(S_m, Sigma_m, p_parameters, q_hat, device)
+        rho_m, Sigma_m = step20(U, sigma_m, S_m, device)
+        p_parameters.p_c_lambda = step21(lambdas, device)
+        p_parameters.p_g_lambda = step22(lambdas, device)
+        p_parameters.p_c_theta = step23(U, device)
+        p_parameters.p_g_theta = step24(U, device)
+        p_parameters.p_h_theta = step25(U, device)
+        p_parameters.p_c_kappa = step26(kappas, device)
+        p_parameters.p_g_kappa = step27(kappas, device)
+        p_parameters.p_h_k = step28(kappas, device)
+        if counter >= burn_in:
+            X_list.append(X_i)
+            F_list.append(F)
+            S_m_list.append(S_m)
+            G_list.append(G)
+            H_list.append(U.H)
+            l_c_i_list.append(lambdas.lambda_c_i)
+            l_g_j_list.append(lambdas.lambda_g_j)
+            theta_c_i_list.append(U.theta_c_i)
+            theta_g_j_list.append(U.theta_g_j)
+            theta_h_k_list.append(U.theta_h_k)
+            kappa_c_i_list.append(kappas.kappa_c_i)
+            kappa_g_j_list.append(kappas.kappa_g_j)
+            kappa_h_k_list.append(kappas.kappa_h_k)
+            J_list.append(J)
+            K_list.append(K)
+            p_c_l_list.append(p_parameters.p_c_lambda)
+            p_g_l_list.append(p_parameters.p_g_lambda)
+            p_c_th_list.append(p_parameters.p_c_theta)
+            p_g_th_list.append(p_parameters.p_g_theta)
+            p_h_th_list.append(p_parameters.p_h_theta)
+            p_c_k_list.append(p_parameters.p_c_kappa)
+            p_g_k_list.append(p_parameters.p_g_kappa)
+            p_h_k_list.append(p_parameters.p_h_k)
+            sDa_list.append(s_Da)
+            mu_c_list.append(mu_c)
+            sigma_m_list.append(sigma_m)
+            rho_m_list.append(rho_m)
+            omega_list.append(omega_squared)
+    return X_list, F_list, S_m_list, G_list, H_list, l_c_i_list, l_g_j_list, theta_c_i_list, theta_g_j_list, theta_h_k_list, kappa_c_i_list, kappa_g_j_list, kappa_h_k_list, J_list, K_list, p_c_l_list, p_g_l_list, p_c_th_list, p_g_th_list, p_h_th_list, p_c_k_list, p_g_k_list, p_h_k_list, sDa_list, mu_c_list, sigma_m_list, rho_m_list, omega_list
+
+def store_Gibbs(X_list, F_list, S_m_list, G_list, H_list, l_c_i_list, l_g_j_list, theta_c_i_list, theta_g_j_list, theta_h_k_list, kappa_c_i_list, kappa_g_j_list, kappa_h_k_list, J_list, K_list, p_c_l_list, p_g_l_list, p_c_th_list, p_g_th_list, p_h_th_list, p_c_k_list, p_g_k_list, p_h_k_list, sDa_list, mu_c_list, sigma_m_list, rho_m_list, omega_list, X_path, F_path, S_m_path, G_path, H_path, lambda_c_i_path, lambda_g_j_path, theta_c_i_path, theta_g_j_path, theta_h_k_path, kappa_c_i_path, kappa_g_j_path, kappa_h_k_path, J_path, K_path, p_c_lambda_path, p_g_lambda_path, p_c_theta_path, p_g_theta_path, p_h_theta_path, p_c_kappa_path, p_g_kappa_path, p_h_kappa_path, sDa_path, mu_c_path, sigma_m_path, rho_m_path, omega_path):
+    for X in X_list:
+        write_mat(X, X_path)
+    for F in F_list:
+        write_1d(F, F_path)
+    for S in S_m_list:
+        write_1d(S, S_m_path)
+    for G in G_list:
+        write_mat(G, G_path)
+    for H in H_list:
+        write_mat(H, H_path)
+    for l in l_c_i_list:
+        write_1d(l, lambda_c_i_path)
+    for l in l_g_j_list:
+        write_1d(l, lambda_g_j_path)
+    for t in theta_c_i_list:
+        write_tuples(t, theta_c_i_path)
+    for t in theta_g_j_list:
+        write_tuples(t, theta_g_j_path)
+    for t in theta_h_k_list:
+        write_tuples(t, theta_h_k_path)
+    for k in kappa_c_i_list:
+        write_1d(k, kappa_c_i_path)
+    for k in kappa_g_j_list:
+        write_1d(k, kappa_g_j_path)
+    for k in kappa_h_k_list:
+        write_1d(k, kappa_h_k_path)
+    for J in J_list:
+        write_1d(J, J_path)
+    for K in K_list:
+        write_1d(K, K_path)
+    for p in p_c_l_list:
+        write_1d(p, p_c_lambda_path)
+    for p in p_g_l_list:
+        write_1d(p, p_g_lambda_path)
+    for p in p_c_th_list:
+        write_1d(p, p_c_theta_path)
+    for p in p_g_th_list:
+        write_1d(p, p_g_theta_path)
+    for p in p_h_th_list:
+        write_1d(p, p_h_theta_path)
+    for p in p_c_k_list:
+        write_1d(p, p_c_kappa_path)
+    for p in p_g_k_list:
+        write_1d(p, p_g_kappa_path)
+    for p in p_h_k_list:
+        write_1d(p, p_h_kappa_path)
+    for s in sDa_list:
+        write_val(s, sDa_path)
+    for m in mu_c_list:
+        write_val(m, mu_c_path)
+    for s in sigma_m_list:
+        write_val(s, sigma_m_path)
+    for r in rho_m_list:
+        write_val(r, rho_m_path)
+    for om in omega_list:
+        write_val(om, omega_path)
