@@ -42,7 +42,8 @@ def iterate_step6(omega_squared, p_parameters, kappa_param, S_U, mu_c, C_vec, G_
         tau = omega_squared*kappa_param**2*(1-point**2)*S_U
         inv_tau = torch.inverse(tau)
         psi = -0.5* torch.linalg.multi_dot([gamma.t().float(), inv_tau.float(), gamma.float()]).item()
-        probs.append(p_parameters.p_c_lambda[i]*math.exp(psi)*(1-point**2)**(-(q_hat+1)/2)) 
+        p = p_parameters.p_c_lambda[i]*math.exp(psi)*(1-point**2)**(-(q_hat+1)/2)
+        probs.append(p.item()) 
     if sum(probs) == 0:
         probs = torch.ones(25, device=device)
     else:
@@ -59,7 +60,8 @@ def iterate_step7(omega_squared, p_parameters, kappa_param, S_U, G_vec, H_vec, q
         tau = omega_squared*kappa_param**2*(1-point**2)*S_U
         inv_tau = torch.inverse(tau)
         psi = -0.5*torch.linalg.multi_dot([gamma.t().float(), inv_tau.float(), gamma.float()]).item()
-        probs.append(p_parameters.p_g_lambda[i]*math.exp(psi)*(1-point**2)**(-(q_hat+1)/2))
+        p = p_parameters.p_g_lambda[i]*math.exp(psi)*(1-point**2)**(-(q_hat+1)/2)
+        probs.append(p.item())
     if sum(probs) == 0:
         probs = torch.ones(25, device=device)
     else:
